@@ -3,14 +3,15 @@ import { Database } from 'sqlite3';
 const db = new Database('data.db');
 
 db.run(`CREATE TABLE IF NOT EXISTS accounts(
-    id INT PRIMARY KEY, 
+    id BIGINT PRIMARY KEY, 
+    email TEXT NOT NULL,
     username TEXT NOT NULL, 
     hash TEXT NOT NULL);`);
 db.run(`CREATE TABLE IF NOT EXISTS sessions(
-    id TEXT PRIMARY KEY, 
+    token TEXT PRIMARY KEY, 
     owner INT NOT NULL, 
     created BIGINT NOT NULL, 
-    lastUse BIGINT NOT NULL,
+    lastRefresh BIGINT NOT NULL,
     FOREIGN KEY(owner) REFERENCES accounts(id));`);
 db.run(`CREATE TABLE IF NOT EXISTS media(
     id INT PRIMARY KEY, 
@@ -24,15 +25,16 @@ console.log("Connected to sqlite database");
 
 interface Account {
     id: number,
+    email: string,
     username: string,
     //hash: string
 }
 
 interface Session {
-    id: string,
+    token: string,
     owner: number,
     created: number,
-    lastUse: number
+    lastRefresh: number
 }
 
 interface Media {
@@ -57,18 +59,39 @@ export default {
             });
         },
 
-        getUserWithHash(username: string, hash: string, callback: (user: Account|undefined)=>any) {
-            db.get("SELECT id, username FROM accounts WHERE username = ? AND hash = ?;", [username, hash], (err, row)=>{
+        getUserWithHash(emailOrUsername: string, hash: string, callback: (user: Account|undefined)=>any) {
+            db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, hash], (err, row)=>{
                 if (err) throw err;
                 else callback(row);
             });
-        }
+        },
+
+        checkUsername(username: string, callback: (exists: boolean)=>any) {
+            db.get("SELECT COUNT(*) as count FROM accounts WHERE username = ?;", username, (err, row)=>{
+                if (err) throw err;
+                else callback(row.count > 0);
+            });
+        },
+
+        createUser(id: number, username: string, hash: string, callback?: ()=>any) {
+            db.run("INSERT TO accounts (id, username, hash) VALUES(?,?,?);", (err)=>{
+                if (err) throw err;
+                else if (callback) callback();
+            })
+        },
 
     },
     sessions: {
         addSession(session: Session) {
-            db.run("INSERT INTO sessions (id, owner, created, lastUse) VALUES(?,?,?,?);", 
-                [session.id, session.owner, session.created, session.lastUse]);
+            db.run("INSERT INTO sessions (token, owner, created, lastRefresh) VALUES(?,?,?,?);", 
+                [session.token, session.owner, session.created, session.lastRefresh]);
+        },
+
+        refreshSession(token: string, callback?: ()=>any) {
+            db.run("UPDATE sessions SET lastRefresh = ? WHERE token = ?;", (err)=>{
+                if (err) throw err;
+                else if (callback) callback()
+            });
         }
     },
     media: {

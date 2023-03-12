@@ -5,24 +5,31 @@ import database, { Session } from "./database";
 
 var sessions: {[key: string]: Session} = {};
 
+export const SESSION_EXPIRE_TIME = 604800000; // 7 Days
+
 export default {
     createSession(userId: number): Session {
-        var id = randomUUID();
+        var token = randomUUID();
         var session: Session = {
-            id: id,
+            token: token,
             owner: userId,
             created: Date.now(),
-            lastUse: Date.now()
+            lastRefresh: Date.now()
         }
-        sessions[id] = session;
+        sessions[token] = session;
         database.sessions.addSession(session);
         return session;
     },
 
-    getSession(id: string, markAsUse: boolean = false): Session | undefined {
-        if (!validator.isUUID(id)) return undefined;
-        var session = sessions[id];
+    getSession(token: string|undefined): Session | undefined {
+        if (!token || !validator.isUUID(token)) return undefined;
+        var session = sessions[token];
         if (!session) return undefined;
         return session;
+    },
+
+    refreshSession(token: string) {
+        sessions[token].lastRefresh = Date.now();
+        database.sessions.refreshSession(token);
     }
 }
