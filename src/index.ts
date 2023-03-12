@@ -21,7 +21,7 @@ app.use(cookieParser());
 // Use api routes imported from api.ts
 app.use("/api/v1", api);
 
-app.listen(port, ()=>{
+const server = app.listen(port, ()=>{
   console.log(`
         ▄▄▄▄▄███▄▄▄▄
       ▄█▀           ▀▀▄        ▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄
@@ -36,4 +36,6 @@ app.listen(port, ()=>{
         █        █▀
   `);
   console.log("Backend Server Started");
-})
+});
+
+export {app, server};

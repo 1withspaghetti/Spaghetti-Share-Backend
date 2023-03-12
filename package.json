@@ -5,6 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "ts-node-dev --respawn  ./src/index.ts",
+    "test": "jest",
     "prod": "tsc && node ./dist/index.js",
     "build": "tsc"
   },
@@ -13,8 +14,13 @@
   "devDependencies": {
     "@types/cookie-parser": "^1.4.3",
     "@types/express": "^4.17.17",
+    "@types/jest": "^29.4.0",
     "@types/node": "^18.15.0",
+    "@types/supertest": "^2.0.12",
     "@types/validator": "^13.7.13",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.0.5",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^4.9.5"

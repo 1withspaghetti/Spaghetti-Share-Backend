@@ -20,8 +20,8 @@ class ApiError extends Error {
 
 
 router.post("/auth/login", 
-    body('username').exists().matches(/^(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
-    body('password').exists().matches(/"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$"/),
+    body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
+    body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
 (req: Request, res: Response)=>{
 
     const errors = validationResult(req);
@@ -38,8 +38,8 @@ router.post("/auth/login",
 
 router.post("/auth/register", 
     body('email').exists().matches(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/),
-    body('username').exists().matches(/^(?=.{8,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
-    body('password').exists().matches(/"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$"/),
+    body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
+    body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
 (req: Request, res: Response)=>{
 
     const errors = validationResult(req);
@@ -48,9 +48,9 @@ router.post("/auth/register",
     database.accounts.checkUsername(req.body.username, (exists: boolean)=>{
         if (exists) throw new ApiError("Username already exists");
 
-        var id = crypto.randomInt(281474976710656);
+        var id = crypto.randomInt(281474976710655);
         var hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
-        database.accounts.createUser(id, req.body.username, hash);
+        database.accounts.createUser(id, req.body.username, req.body.email, hash);
 
         var session = sessionService.createSession(id);
         res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});

@@ -60,7 +60,7 @@ export default {
         },
 
         getUserWithHash(emailOrUsername: string, hash: string, callback: (user: Account|undefined)=>any) {
-            db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, hash], (err, row)=>{
+            db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, emailOrUsername, hash], (err, row)=>{
                 if (err) throw err;
                 else callback(row);
             });
@@ -73,8 +73,8 @@ export default {
             });
         },
 
-        createUser(id: number, username: string, hash: string, callback?: ()=>any) {
-            db.run("INSERT TO accounts (id, username, hash) VALUES(?,?,?);", (err)=>{
+        createUser(id: number, email: string, username: string, hash: string, callback?: ()=>any) {
+            db.run("INSERT INTO accounts (id, email, username, hash) VALUES(?,?,?,?);", [id, email, username, hash], (err)=>{
                 if (err) throw err;
                 else if (callback) callback();
             })
