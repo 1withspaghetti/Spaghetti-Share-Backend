@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
-import api from './api'
+import api from './api/api'
 
 dotenv.config();
 

@@ -1,22 +1,13 @@
-import { Router, NextFunction, Request, Response } from 'express'
-import { body, query, validationResult } from 'express-validator';
+import { Router, Request, Response } from 'express'
+import { body, validationResult } from "express-validator";
 import crypto from 'crypto'
 
-import database from './database';
-import sessionService, { SESSION_EXPIRE_TIME } from './session-service';
+import database from '../database';
+import sessionService, { SESSION_EXPIRE_TIME } from '../session-service';
+import { ApiError } from './api';
+
 
 var router = Router();
-
-class ApiError extends Error {
-    reason: string;
-    status?: number;
-
-    constructor(reason: string, status?: number) {
-        super("Api Error: "+reason);
-        this.reason = reason;
-        this.status = status;
-    }
-}
 
 
 router.post("/auth/login", 
@@ -65,20 +56,5 @@ router.get("/auth/refresh", (req: Request, res: Response)=>{
 
     res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
 });
-
-// 404 Not Found
-router.use((req: Request, res: Response)=>{
-    throw new ApiError("Not Found", 404);
-})
-
-// Error handling
-router.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    if (err instanceof ApiError) {
-        res.status(err.status || 400).json({success: false, reason: err.reason || "Invalid Request"})
-    } else {
-        console.error(err.stack)
-        res.status(500).json({success: false, reason: "Internal Server Error"})
-    }
-})
 
 export default router;

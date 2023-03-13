@@ -95,6 +95,8 @@ export default {
         }
     },
     media: {
-
+        mediaExists(id: number) {
+            
+        }
     }
 }
