@@ -66,7 +66,10 @@ router.get("/auth/refresh", (req: Request, res: Response)=>{
     res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
 });
 
-
+// 404 Not Found
+router.use((req: Request, res: Response)=>{
+    throw new ApiError("Not Found", 404);
+})
 
 // Error handling
 router.use((err: Error, req: Request, res: Response, next: NextFunction) => {

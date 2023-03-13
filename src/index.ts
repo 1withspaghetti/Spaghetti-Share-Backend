@@ -35,7 +35,7 @@ const server = app.listen(port, ()=>{
       ▀█▄         ▄▀
         █        █▀
   `);
-  console.log("Backend Server Started");
+  console.log("Backend Server Started | Port "+port);
 });
 
 export {app, server};
