@@ -21,6 +21,9 @@ app.use(cookieParser());
 // Use api routes imported from api.ts
 app.use("/api/v1", api);
 
+// Uploaded files
+app.use('/media', express.static('media'));
+
 const server = app.listen(port, ()=>{
   console.log(`
         ▄▄▄▄▄███▄▄▄▄

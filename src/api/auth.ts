@@ -10,7 +10,7 @@ import { ApiError } from './api';
 var router = Router();
 
 
-router.post("/auth/login", 
+router.post("/login", 
     body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
     body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
 (req: Request, res: Response)=>{
@@ -27,7 +27,7 @@ router.post("/auth/login",
     });
 });
 
-router.post("/auth/register", 
+router.post("/register", 
     body('email').exists().matches(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/),
     body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
     body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
