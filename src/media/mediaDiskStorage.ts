@@ -5,11 +5,13 @@ import fs from 'fs';
 
 import mediaId from './mediaId';
 import { ApiError } from '../api/api';
+import { FILE_TYPES } from '../api/media';
 
 declare global {
     namespace Express.Multer {
         interface File {
             customID: number;
+            fileType: string;
         }
     }
 }
@@ -24,13 +26,16 @@ export default class MediaDiskStorage implements StorageEngine {
     }
 
     _handleFile(req: Request, file: Express.Multer.File, callback: (error?: any, info?: Partial<Express.Multer.File> | undefined) => void): void {
+        var fileType = path.extname(file.originalname).substring(1);
+        if (!Object.keys(FILE_TYPES).includes(fileType)) throw new ApiError("Unknown file type");
+
         var id = mediaId.generateNewId();
-        var filename = mediaId.idToBase64(id);
+        var filename = mediaId.idToBase64(id)+"."+fileType;
         
         var finalPath = path.join(this.destination, filename);
         var outStream = fs.createWriteStream(finalPath);
 
-        file.stream.pipe(outStream)
+        file.stream.pipe(outStream);
         outStream.on('error', ()=>{
             fs.unlink(finalPath, ()=>{
                 callback(new ApiError("File Stream Closed"));
@@ -39,6 +44,7 @@ export default class MediaDiskStorage implements StorageEngine {
         outStream.on('finish', () => {
             callback(null, {
                 customID: id,
+                fileType: fileType,
                 destination: this.destination,
                 filename: filename,
                 path: finalPath,

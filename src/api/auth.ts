@@ -41,20 +41,18 @@ router.post("/auth/register",
 
         var id = crypto.randomInt(281474976710655);
         var hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
-        database.accounts.createUser(id, req.body.username, req.body.email, hash);
+        database.accounts.createUser(id, req.body.email, req.body.username, hash);
 
         var session = sessionService.createSession(id);
         res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
     });
 });
 
-router.get("/auth/refresh", (req: Request, res: Response)=>{
-    var session = sessionService.getSession(req.cookies['session-token']);
-    if (!session) throw new ApiError("Invalid Session Token", 401);
+router.get("/auth/refresh", sessionService.middleware, (req: Request, res: Response)=>{
 
-    sessionService.refreshSession(session.token);
+    sessionService.refreshSession(req.session.token);
 
-    res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
+    res.cookie('session-token', req.session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
 });
 
 export default router;

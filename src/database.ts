@@ -95,8 +95,11 @@ export default {
         }
     },
     media: {
-        mediaExists(id: number) {
-            
+        addMedia(id: number, owner: number, name: string, type: string, time: number, callback?: ()=>any) {
+            db.run("INSERT INTO media (id, owner, name, type, time) VALUES(?,?,?,?,?);", [id, owner, name, type, time], (err)=>{
+                if (err) throw err;
+                if (callback) callback();
+            })
         }
     }
 }
