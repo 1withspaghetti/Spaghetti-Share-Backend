@@ -53,21 +53,21 @@ export default {
     accounts: {
 
         getUser(id: number, callback: (user: Account|undefined)=>any) {
-            db.get("SELECT id, username FROM accounts WHERE id = ?;", id, (err, row)=>{
+            db.get("SELECT id, username FROM accounts WHERE id = ?;", id, (err, row: any)=>{
                 if (err) throw err;
                 else callback(row);
             });
         },
 
         getUserWithHash(emailOrUsername: string, hash: string, callback: (user: Account|undefined)=>any) {
-            db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, emailOrUsername, hash], (err, row)=>{
+            db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, emailOrUsername, hash], (err, row: any)=>{
                 if (err) throw err;
                 else callback(row);
             });
         },
 
         checkUsername(username: string, callback: (exists: boolean)=>any) {
-            db.get("SELECT COUNT(*) as count FROM accounts WHERE username = ?;", username, (err, row)=>{
+            db.get("SELECT COUNT(*) as count FROM accounts WHERE username = ?;", username, (err, row: any)=>{
                 if (err) throw err;
                 else callback(row.count > 0);
             });

@@ -8,6 +8,8 @@ import mediaId from '../media/mediaId';
 import { ApiError } from './api';
 import database from '../database';
 import sessionService from '../session-service';
+import { body, query } from 'express-validator';
+import mediaUrl from '../media/mediaUrl';
 
 export const FILE_TYPES: {[key: string]: string} = {
     png: "image/png",
@@ -48,6 +50,36 @@ router.post('/upload', sessionService.middleware, mediaUpload.single('media'), (
         fs.unlinkSync(req.file.path);
         throw new ApiError("Error uploading file");
     }
+})
+
+router.post('/upload/url', sessionService.middleware, 
+    body('url').exists().isURL({require_protocol: true, protocols: ['http', 'https']}), 
+(req: Request, res: Response)=>{
+
+    var id = mediaId.generateNewId();
+    mediaUrl.downloadMedia(req.body.url, id, (path, ext)=>{
+        console.log("File uploaded to "+path+" with id "+id);
+        try {
+            database.media.addMedia(id, req.session.owner, "Unnamed File", ext, Date.now());  
+        } catch (e) {
+            // In case of database error, remove file to prevent clogging
+            fs.unlinkSync(path);
+        }
+    }).then((file)=>{
+        res.json({success: true, id: mediaId.idToBase64(id)});
+    }, (err)=>{
+        res.status(err.status || 400).json({success: false, reason: err.reason || "Unknown Error"})
+    });
+});
+
+router.get('/upload/progress', sessionService.middleware, 
+    query('id').isHexadecimal().isLength({min: 2, max: 10}), 
+(req: Request, res: Response)=>{
+    if (!(typeof req.query.id === 'string')) throw new ApiError("Invalid Id");
+    var id = mediaId.base64ToId(req.query.id);
+    var progress = mediaUrl.getProgress(id);
+    if (!progress) throw new ApiError("Invalid Id");
+    res.json({success: true, progress: progress});
 })
 
 export default router;
