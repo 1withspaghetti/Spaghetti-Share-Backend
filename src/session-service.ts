@@ -18,6 +18,23 @@ declare global {
     }
 }
 
+// On startup, grab saved sessions
+database.sessions.getSessions((rows)=>{
+    for (let session of rows) {
+        sessions[session.token] = session;
+    }
+})
+
+// Delete stale sessions
+setInterval(()=>{
+    database.sessions.purgeSessions(SESSION_EXPIRE_TIME);
+    for (let token of Object.keys(sessions)) {
+        if (sessions[token].lastRefresh < Date.now() - SESSION_EXPIRE_TIME) {
+            delete sessions[token];
+        }
+    }
+}, 3600000) // 1 hour
+
 export default {
     createSession(userId: number): Session {
         var token = randomUUID();

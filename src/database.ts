@@ -88,7 +88,21 @@ export default {
         },
 
         refreshSession(token: string, callback?: ()=>any) {
-            db.run("UPDATE sessions SET lastRefresh = ? WHERE token = ?;", (err)=>{
+            db.run("UPDATE sessions SET lastRefresh = ? WHERE token = ?;", [Date.now(), token], (err)=>{
+                if (err) throw err;
+                else if (callback) callback()
+            });
+        },
+
+        getSessions(callback: (rows: Session[])=>any) {
+            db.all("SELECT token, owner, created, lastRefresh FROM sessions;", (err, rows: any[])=>{
+                if (err) throw err;
+                callback(rows as Session[]);
+            })
+        },
+
+        purgeSessions(maxAge: number, callback?: ()=>any) {
+            db.run("DELETE FROM sessions WHERE lastRefresh <= ?;", [Date.now() - maxAge], (err)=>{
                 if (err) throw err;
                 else if (callback) callback()
             });
