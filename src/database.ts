@@ -104,6 +104,13 @@ export default {
             })
         },
 
+        deleteSession(token: string, callback?: ()=>any, onError?: (err: Error)=>any) {
+            db.run("DELETE FROM sessions WHERE token = ?;", [token], (err)=>{
+                if (err) onError?.(err);
+                else callback?.();
+            });
+        },
+
         purgeSessions(maxAge: number, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("DELETE FROM sessions WHERE lastRefresh <= ?;", [Date.now() - maxAge], (err)=>{
                 if (err) onError?.(err);

@@ -62,13 +62,21 @@ export default {
         database.sessions.refreshSession(token);
     },
 
+    deleteSession(token: string) {
+        database.sessions.deleteSession(token);
+        delete sessions[token];
+    },
+
     middleware(req: Request, res: Response, next: NextFunction) {
         var token = req.cookies['session-token']
         var session: Session|undefined = undefined;
-        if (token || validator.isUUID(token)) session = sessions[token]
+        if (token && validator.isUUID(token)) session = sessions[token]
 
-        if (!session) throw new ApiError("Invalid Session Token", 401);
-        req.session = session;
-        next();
+        if (!session) {
+            res.clearCookie('session-token').status(401).json({success: false, reason: "Invalid Session Token"});
+        } else {
+            req.session = session;
+            next();
+        }
     }
 }

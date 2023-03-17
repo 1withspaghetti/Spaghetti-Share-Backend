@@ -48,11 +48,16 @@ router.post("/register",
     }, next);
 });
 
-router.get("/auth/refresh", sessionService.middleware, (req: Request, res: Response)=>{
+router.get("/refresh", sessionService.middleware, (req: Request, res: Response)=>{
 
     sessionService.refreshSession(req.session.token);
 
     res.cookie('session-token', req.session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
+});
+
+router.get("/logout", sessionService.middleware, (req: Request, res: Response)=>{
+    sessionService.deleteSession(req.session.token);
+    res.clearCookie('session-token').json({success: true});
 });
 
 export default router;
