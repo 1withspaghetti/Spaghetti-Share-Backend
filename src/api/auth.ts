@@ -20,7 +20,7 @@ router.post("/login",
 
     var hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
     database.accounts.getUserWithHash(req.body.username, hash, (user)=>{
-        if (!user) throw new ApiError("Invalid Username or Password");
+        if (!user) return next(new ApiError("Invalid Username or Password"));
 
         var session = sessionService.createSession(user.id);
         res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
@@ -37,7 +37,7 @@ router.post("/register",
     if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
 
     database.accounts.checkUsername(req.body.username, (exists: boolean)=>{
-        if (exists) throw new ApiError("Username already exists");
+        if (exists) return next(new ApiError("Username already exists"));
 
         var id = crypto.randomInt(281474976710655);
         var hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
