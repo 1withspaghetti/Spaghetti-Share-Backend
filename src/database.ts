@@ -52,67 +52,77 @@ export {
 export default {
     accounts: {
 
-        getUser(id: number, callback: (user: Account|undefined)=>any) {
+        getUser(id: number, callback: (user: Account|undefined)=>any, onError?: (err: Error)=>any) {
             db.get("SELECT id, username FROM accounts WHERE id = ?;", id, (err, row: any)=>{
-                if (err) throw err;
+                if (err) onError?.(err);
                 else callback(row);
             });
         },
 
-        getUserWithHash(emailOrUsername: string, hash: string, callback: (user: Account|undefined)=>any) {
+        getUserWithHash(emailOrUsername: string, hash: string, callback: (user: Account|undefined)=>any, onError?: (err: Error)=>any) {
             db.get("SELECT id, username FROM accounts WHERE (username = ? OR email = ?) AND hash = ?;", [emailOrUsername, emailOrUsername, hash], (err, row: any)=>{
-                if (err) throw err;
+                if (err) onError?.(err);
                 else callback(row);
             });
         },
 
-        checkUsername(username: string, callback: (exists: boolean)=>any) {
+        checkUsername(username: string, callback: (exists: boolean)=>any, onError?: (err: Error)=>any) {
             db.get("SELECT COUNT(*) as count FROM accounts WHERE username = ?;", username, (err, row: any)=>{
-                if (err) throw err;
+                if (err) onError?.(err);
                 else callback(row.count > 0);
             });
         },
 
-        createUser(id: number, email: string, username: string, hash: string, callback?: ()=>any) {
+        createUser(id: number, email: string, username: string, hash: string, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("INSERT INTO accounts (id, email, username, hash) VALUES(?,?,?,?);", [id, email, username, hash], (err)=>{
-                if (err) throw err;
-                else if (callback) callback();
+                if (err) onError?.(err);
+                else callback?.();
             })
         },
 
     },
     sessions: {
-        addSession(session: Session) {
+        addSession(session: Session, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("INSERT INTO sessions (token, owner, created, lastRefresh) VALUES(?,?,?,?);", 
-                [session.token, session.owner, session.created, session.lastRefresh]);
+                [session.token, session.owner, session.created, session.lastRefresh], (err)=>{
+                    if (err) onError?.(err);
+                    else callback?.();
+                });
         },
 
-        refreshSession(token: string, callback?: ()=>any) {
+        refreshSession(token: string, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("UPDATE sessions SET lastRefresh = ? WHERE token = ?;", [Date.now(), token], (err)=>{
-                if (err) throw err;
-                else if (callback) callback()
+                if (err) onError?.(err);
+                else callback?.();
             });
         },
 
-        getSessions(callback: (rows: Session[])=>any) {
+        getSessions(callback: (rows: Session[])=>any, onError?: (err: Error)=>any) {
             db.all("SELECT token, owner, created, lastRefresh FROM sessions;", (err, rows: any[])=>{
-                if (err) throw err;
-                callback(rows as Session[]);
+                if (err) onError?.(err);
+                else callback(rows);
             })
         },
 
-        purgeSessions(maxAge: number, callback?: ()=>any) {
+        purgeSessions(maxAge: number, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("DELETE FROM sessions WHERE lastRefresh <= ?;", [Date.now() - maxAge], (err)=>{
-                if (err) throw err;
-                else if (callback) callback()
+                if (err) onError?.(err);
+                else callback?.();
             });
         }
     },
     media: {
-        addMedia(id: number, owner: number, name: string, type: string, time: number, callback?: ()=>any) {
+        addMedia(id: number, owner: number, name: string, type: string, time: number, callback?: ()=>any, onError?: (err: Error)=>any) {
             db.run("INSERT INTO media (id, owner, name, type, time) VALUES(?,?,?,?,?);", [id, owner, name, type, time], (err)=>{
-                if (err) throw err;
-                if (callback) callback();
+                if (err) onError?.(err);
+                else callback?.();
+            })
+        },
+        
+        getMediaWithOwner(id: number, owner: number, callback: (data: Media)=>any, onError?: (err: Error)=>any) {
+            db.get("SELECT id, name, type, time FROM media WHERE id = ? AND owner = ?", [id, owner], (err, row: any)=>{
+                if (err) onError?.(err);
+                else callback(row as Media);
             })
         }
     }

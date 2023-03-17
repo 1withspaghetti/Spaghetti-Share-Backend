@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express'
+import { Router, Request, Response, NextFunction } from 'express'
 import { body, validationResult } from "express-validator";
 import crypto from 'crypto'
 
@@ -13,7 +13,7 @@ var router = Router();
 router.post("/login", 
     body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
     body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
-(req: Request, res: Response)=>{
+(req: Request, res: Response, next: NextFunction)=>{
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
@@ -24,14 +24,14 @@ router.post("/login",
 
         var session = sessionService.createSession(user.id);
         res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
-    });
+    }, next);
 });
 
 router.post("/register", 
     body('email').exists().matches(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/),
     body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
     body('password').exists().matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,32}$/),
-(req: Request, res: Response)=>{
+(req: Request, res: Response, next: NextFunction)=>{
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
@@ -41,11 +41,11 @@ router.post("/register",
 
         var id = crypto.randomInt(281474976710655);
         var hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
-        database.accounts.createUser(id, req.body.email, req.body.username, hash);
-
-        var session = sessionService.createSession(id);
-        res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
-    });
+        database.accounts.createUser(id, req.body.email, req.body.username, hash, ()=>{
+            var session = sessionService.createSession(id);
+            res.cookie('session-token', session.token, { maxAge: SESSION_EXPIRE_TIME, secure: true }).json({ success: true});
+        }, next);
+    }, next);
 });
 
 router.get("/auth/refresh", sessionService.middleware, (req: Request, res: Response)=>{

@@ -23,6 +23,7 @@ database.sessions.getSessions((rows)=>{
     for (let session of rows) {
         sessions[session.token] = session;
     }
+    console.log("Loaded "+rows.length+" sessions from database");
 })
 
 // Delete stale sessions

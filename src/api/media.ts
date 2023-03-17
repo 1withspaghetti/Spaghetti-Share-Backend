@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer, { MulterError } from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -36,40 +36,37 @@ const mediaUpload = multer({
 
 var router = Router();
 
-router.post('/upload', sessionService.middleware, mediaUpload.single('media'), (req: Request, res: Response)=>{
+router.post('/upload', sessionService.middleware, mediaUpload.single('media'), (req: Request, res: Response, next: NextFunction)=>{
     if (!req.file) throw new ApiError("Error uploading file");
     console.log("File uploaded to "+req.file.path+" with id "+req.file.customID);
 
-    try {
-        database.media.addMedia(req.file.customID, req.session.owner, req.file.originalname.replace(/\.([^.]+)$/, ""), req.file.fileType, Date.now(), ()=>{
-            if (!req.file) throw new ApiError("Error uploading file");
-            res.json({success: true, id: mediaId.idToBase64(req.file.customID)});
-        });
-    } catch(err) {
+    const id = req.file.customID;
+    const path = req.file.path;
+
+    database.media.addMedia(req.file.customID, req.session.owner, req.file.originalname.replace(/\.([^.]+)$/, ""), req.file.fileType, Date.now(), ()=>{
+        res.json({success: true, id: mediaId.idToBase64(id)});
+    }, (err)=>{
         // In case of database error, remove file to prevent clogging
-        fs.unlinkSync(req.file.path);
-        throw new ApiError("Error uploading file");
-    }
+        fs.unlinkSync(path);
+        next(err);
+    });
 })
 
 router.post('/upload/url', sessionService.middleware, 
     body('url').exists().isURL({require_protocol: true, protocols: ['http', 'https']}), 
-(req: Request, res: Response)=>{
+(req: Request, res: Response, next: NextFunction)=>{
 
     var id = mediaId.generateNewId();
     mediaUrl.downloadMedia(req.body.url, id, (path, ext)=>{
         console.log("File uploaded to "+path+" with id "+id);
-        try {
-            database.media.addMedia(id, req.session.owner, "Unnamed File", ext, Date.now());  
-        } catch (e) {
+        database.media.addMedia(id, req.session.owner, "Unnamed File", ext, Date.now(), ()=>{}, (err)=>{
             // In case of database error, remove file to prevent clogging
             fs.unlinkSync(path);
-        }
-    }).then((file)=>{
+            next(err);
+        });  
+    }).then(()=>{
         res.json({success: true, id: mediaId.idToBase64(id)});
-    }, (err)=>{
-        res.status(err.status || 400).json({success: false, reason: err.reason || "Unknown Error"})
-    });
+    }, next).catch(next)
 });
 
 router.get('/upload/progress', sessionService.middleware, 
@@ -81,5 +78,19 @@ router.get('/upload/progress', sessionService.middleware,
     if (!progress) throw new ApiError("Invalid Id");
     res.json({success: true, progress: progress});
 })
+
+router.get('/data', sessionService.middleware,
+    query('id').isHexadecimal().isLength({min: 8, max: 8}), 
+(req: Request, res: Response, next: NextFunction)=>{
+    if (!(typeof req.query.id === 'string')) throw new ApiError("Invalid Id");
+    var id = mediaId.base64ToId(req.query.id);
+    database.media.getMediaWithOwner(id, req.session.owner, (data: any)=>{
+        if (!data) next(new ApiError("Media does not exist"));
+        else {
+            data.id = mediaId.idToBase64(data.id);
+            res.json({success: true, media: data});
+        }
+    }, next)
+});
 
 export default router;
