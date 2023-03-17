@@ -26,7 +26,7 @@ export default class MediaDiskStorage implements StorageEngine {
     }
 
     _handleFile(req: Request, file: Express.Multer.File, callback: (error?: any, info?: Partial<Express.Multer.File> | undefined) => void): void {
-        var fileType = path.extname(file.originalname).substring(1);
+        var fileType = path.extname(file.originalname.toLowerCase()).substring(1);
         if (!Object.keys(FILE_TYPES).includes(fileType)) throw new ApiError("Unknown file type");
 
         var id = mediaId.generateNewId();

@@ -18,7 +18,9 @@ db.run(`CREATE TABLE IF NOT EXISTS media(
     owner INT NOT NULL, 
     name TEXT NOT NULL, 
     type TEXT NOT NULL, 
+    size INT NOT NULL,
     time BIGINT NOT NULL,
+    tags TEXT NOT NULL,
     FOREIGN KEY(owner) REFERENCES accounts(id));`);
 
 console.log("Connected to sqlite database");
@@ -42,7 +44,9 @@ interface Media {
     //owner: number,
     name: string,
     type: string,
+    //size: number,
     time: number
+    tags: string
 }
 export {
     Account,
@@ -119,17 +123,27 @@ export default {
         }
     },
     media: {
-        addMedia(id: number, owner: number, name: string, type: string, time: number, callback?: ()=>any, onError?: (err: Error)=>any) {
-            db.run("INSERT INTO media (id, owner, name, type, time) VALUES(?,?,?,?,?);", [id, owner, name, type, time], (err)=>{
+        addMedia(id: number, owner: number, name: string, type: string, size: number, time: number, tags: string, callback?: ()=>any, onError?: (err: Error)=>any) {
+            db.run("INSERT INTO media (id, owner, name, type, size, time, tags) VALUES(?,?,?,?,?,?,?);", [id, owner, name, type, size, time, tags], (err)=>{
                 if (err) onError?.(err);
                 else callback?.();
             })
         },
         
         getMediaWithOwner(id: number, owner: number, callback: (data: Media)=>any, onError?: (err: Error)=>any) {
-            db.get("SELECT id, name, type, time FROM media WHERE id = ? AND owner = ?", [id, owner], (err, row: any)=>{
+            db.get("SELECT id, name, type, time, tags FROM media WHERE id = ? AND owner = ?", [id, owner], (err, row: any)=>{
                 if (err) onError?.(err);
                 else callback(row as Media);
+            })
+        },
+
+        searchMedia(owner: number, type: string, sizeMin: number, sizeMax: number, timeMin: number, timeMax: number, callback: (results: Media[])=>any, onError?: (err: Error)=>any) {
+            var sqlItems: any[] = [owner, sizeMin, sizeMax, timeMin, timeMax];
+            if (type) sqlItems.push(type);
+            db.all("SELECT id, name, type, time, tags FROM media WHERE owner = ? AND size > ? AND size < ? AND time > ? AND time < ? " + (type ? "AND type = ? ":"") + "ORDER BY time LIMIT 500;", 
+            sqlItems, (err, rows)=>{
+                if (err) onError?.(err);
+                else callback(rows as Media[]);
             })
         }
     }

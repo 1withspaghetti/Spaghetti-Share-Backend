@@ -16,7 +16,7 @@ export type Progress = {
 var progressMap: {[key: string]: Progress} = {}
 
 setInterval(()=>{
-    for (let key in Object.keys(progressMap)) {
+    for (let key of Object.keys(progressMap)) {
         if (progressMap[key].started < Date.now() - 300000) // Expires after 5 minutes
             delete progressMap[key];
     }
@@ -26,7 +26,7 @@ export default {
     /**
      * Returns one the download has started, and runs the callback once it is finished
      */
-    async downloadMedia(url: string, id: number, callback: (path: string, ext: string)=>any) {
+    async downloadMedia(url: string, id: number, callback: (path: string, ext: string, size: number)=>any) {
 
         var res = await axios.head(url)
 
@@ -70,7 +70,7 @@ export default {
         fileStream.on('finish', ()=>{
             fileStream.close();
             progressMap[id].completed = true;
-            callback(file, ext);
+            callback(file, ext, size);
         })
 
         return;
