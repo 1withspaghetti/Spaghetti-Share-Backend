@@ -1,4 +1,7 @@
 import { Database } from 'sqlite3';
+import fs from 'fs';
+
+import { ApiError } from './api/api';
 
 const db = new Database('data.db');
 
@@ -124,10 +127,18 @@ export default {
     },
     media: {
         addMedia(id: number, owner: number, name: string, type: string, size: number, time: number, tags: string, callback?: ()=>any, onError?: (err: Error)=>any) {
-            db.run("INSERT INTO media (id, owner, name, type, size, time, tags) VALUES(?,?,?,?,?,?,?);", [id, owner, name, type, size, time, tags], (err)=>{
-                if (err) onError?.(err);
-                else callback?.();
-            })
+            fs.readdir('/media', (err, files) => {
+                if (err) return onError?.(err);
+                if (files.length > 2000) return onError?.(new ApiError("Server has reached max capacity, please contact 1withspaghetti")); // DDOS attack prevention (max 16 GB)
+                db.get("SELECT COUNT(*) FROM media WHERE owner = ?;", owner, (err, row: any)=>{
+                    if (err) return onError?.(err);
+                    if (row.count > 250) return onError?.(new ApiError("You have uploaded too many files! Try deleting some...")); // Limit each user to 250 files max (max 2 GB)
+                    db.run("INSERT INTO media (id, owner, name, type, size, time, tags) VALUES(?,?,?,?,?,?,?);", [id, owner, name, type, size, time, tags], (err)=>{
+                        if (err) onError?.(err);
+                        else callback?.();
+                    })
+                })
+            });
         },
         
         getMediaWithOwner(id: number, owner: number, callback: (data: Media)=>any, onError?: (err: Error)=>any) {
@@ -144,6 +155,13 @@ export default {
             sqlItems, (err, rows)=>{
                 if (err) onError?.(err);
                 else callback(rows as Media[]);
+            })
+        },
+
+        editMedia(id: number, owner: number, name: string, tags: string, callback?: ()=>any, onError?: (err: Error)=>any) {
+            db.run("UPDATE media SET name = ?, tags = ? WHERE id = ? AND owner = ?;", [name, tags, id, owner], (err)=>{
+                if (err) onError?.(err);
+                else callback?.();
             })
         }
     }

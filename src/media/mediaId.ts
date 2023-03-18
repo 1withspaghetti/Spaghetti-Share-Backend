@@ -16,5 +16,11 @@ export default {
     base64ToId(val: string): number {
         let buf = Buffer.from(val, 'hex');
         return buf.readInt32BE();
+    },
+
+    normalizeName(name: string): string {
+        name = name.replace(/\.([^.]+)$/, "").replace(/[^a-zA-Z0-9\s_\\.\-\(\):]+/g, "").substring(0, 40);
+        if (!name) name = "Unnamed file";
+        return name;
     }
 }

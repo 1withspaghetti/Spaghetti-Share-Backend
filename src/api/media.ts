@@ -45,7 +45,7 @@ router.post('/upload', sessionService.middleware, mediaUpload.single('media'), (
     const path = req.file.path;
     const size = req.file.size;
 
-    database.media.addMedia(req.file.customID, req.session.owner, req.file.originalname.replace(/\.([^.]+)$/, ""), req.file.fileType, size, Date.now(), "", ()=>{
+    database.media.addMedia(req.file.customID, req.session.owner, mediaId.normalizeName(req.file.originalname), req.file.fileType, size, Date.now(), "", ()=>{
         res.json({success: true, id: mediaId.idToBase64(id)});
     }, (err)=>{
         // In case of database error, remove file to prevent clogging
@@ -62,9 +62,10 @@ router.post('/upload/url', sessionService.middleware,
     if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
 
     var id = mediaId.generateNewId();
+    var name = req.body.url.match(/\/([^.]{0,40})$/)?.[0] || "";
     mediaUrl.downloadMedia(req.body.url, id, (path, ext, size)=>{
         console.log("File uploaded to "+path+" with id "+id);
-        database.media.addMedia(id, req.session.owner, "Unnamed File", ext, size, Date.now(), "", ()=>{}, (err)=>{
+        database.media.addMedia(id, req.session.owner, mediaId.normalizeName(name), ext, size, Date.now(), "", ()=>{}, (err)=>{
             // In case of database error, remove file to prevent clogging
             fs.unlinkSync(path);
             next(err);
@@ -107,7 +108,7 @@ router.get('/data', sessionService.middleware,
 });
 
 router.get('/search', sessionService.middleware,
-    query('search').optional().isAlphanumeric(),
+    query('search').optional().matches(/^[a-zA-Z0-9\s_\\.\-\(\):]+$/),
     query('type').optional().isAlphanumeric().isIn(Object.keys(FILE_TYPES)),
     query('sizeMin').optional().isFloat(),
     query('sizeMax').optional().isFloat(),
@@ -135,5 +136,19 @@ router.get('/search', sessionService.middleware,
         }
     }, next)
 });
+
+router.post('/edit', sessionService.middleware,
+    body('id').exists().isHexadecimal(),
+    body('name').exists().matches(/^[a-zA-Z0-9\s_\\.\-\(\):]{1,40}$/),
+    body('tags').exists().isArray({max: 50}).withMessage("Tags list is too long! Max of 50 tags"),
+    body('tags.*').matches(/^[a-z\-]{1,25}$/),
+(req: Request, res: Response, next: NextFunction)=>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
+
+    database.media.editMedia(mediaId.base64ToId(req.body.id), req.session.owner, req.body.name, req.body.tags.join(' '), ()=>{
+        res.json({success: true});
+    }, next);
+})
 
 export default router;
