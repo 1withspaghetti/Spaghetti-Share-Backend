@@ -33,6 +33,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-validator": "^6.15.0",
+    "ffmpeg-static": "^5.1.0",
     "fuzzysort": "^2.0.4",
     "multer": "^1.4.5-lts.1",
     "sqlite3": "^5.1.6",

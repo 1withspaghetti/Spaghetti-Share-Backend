@@ -11,6 +11,7 @@ import database from '../database';
 import sessionService from '../session-service';
 import { body, query, validationResult } from 'express-validator';
 import mediaUrl from '../media/mediaUrl';
+import mediaVideo from '../media/mediaVideo';
 
 export const FILE_TYPES: {[key: string]: string} = {
     png: "image/png",
@@ -41,15 +42,21 @@ router.post('/upload', sessionService.middleware, mediaUpload.single('media'), (
     if (!req.file) throw new ApiError("Error uploading file");
     console.log("File uploaded to "+req.file.path+" with id "+req.file.customID);
 
-    const id = req.file.customID;
-    const path = req.file.path;
-    const size = req.file.size;
+    const file = req.file;
 
-    database.media.addMedia(req.file.customID, req.session.owner, mediaId.normalizeName(req.file.originalname), req.file.fileType, size, Date.now(), "", ()=>{
-        res.json({success: true, id: mediaId.idToBase64(id)});
+    mediaVideo.generateThumbnailIfVideo(file.path, file.fileType, ()=>{
+        database.media.addMedia(file.customID, req.session.owner, mediaId.normalizeName(file.originalname), file.fileType, file.size, Date.now(), "", ()=>{
+            res.json({success: true, id: mediaId.idToBase64(file.customID)});
+        }, (err)=>{
+            // In case of database error, remove file to prevent clogging
+            fs.unlinkSync(file.path);
+            fs.unlinkSync(file.path+".jpg");
+            next(err);
+        });
     }, (err)=>{
-        // In case of database error, remove file to prevent clogging
-        fs.unlinkSync(path);
+        // In case of generation error, remove file to prevent clogging
+        console.error(err);
+        fs.unlinkSync(file.path);
         next(err);
     });
 })
@@ -65,11 +72,18 @@ router.post('/upload/url', sessionService.middleware,
     var name = req.body.url.match(/\/([^.]{0,40})$/)?.[0] || "";
     mediaUrl.downloadMedia(req.body.url, id, (path, ext, size)=>{
         console.log("File uploaded to "+path+" with id "+id);
-        database.media.addMedia(id, req.session.owner, mediaId.normalizeName(name), ext, size, Date.now(), "", ()=>{}, (err)=>{
-            // In case of database error, remove file to prevent clogging
+        mediaVideo.generateThumbnailIfVideo(path, ext, ()=>{
+            database.media.addMedia(id, req.session.owner, mediaId.normalizeName(name), ext, size, Date.now(), "", ()=>{
+                mediaUrl.setComplete(id);
+            }, (err)=>{
+                fs.unlinkSync(path);
+                mediaUrl.setError(id);
+            }); 
+        }, (err)=>{
             fs.unlinkSync(path);
-            next(err);
-        });  
+            mediaUrl.setError(id);
+            console.error(err);
+        }) 
     }).then(()=>{
         res.json({success: true, id: mediaId.idToBase64(id)});
     }, next).catch(next)

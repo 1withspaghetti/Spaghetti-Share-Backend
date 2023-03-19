@@ -69,7 +69,6 @@ export default {
         });
         fileStream.on('finish', ()=>{
             fileStream.close();
-            progressMap[id].completed = true;
             callback(file, ext, size);
         })
 
@@ -92,5 +91,13 @@ export default {
 
     getProgress(id: number): Progress|undefined {
         return progressMap[id];
+    },
+
+    setComplete(id: number) {
+        progressMap[id].completed = true;
+    },
+
+    setError(id: number) {
+        progressMap[id].error = true;
     }
 }

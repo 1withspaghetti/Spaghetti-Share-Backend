@@ -27,11 +27,10 @@ router.use((req: Request, res: Response)=>{
 
 // Error handling
 router.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-    console.error(err);
     if (err instanceof ApiError) {
         res.status(err.status || 400).json({success: false, reason: err.reason || "Invalid Request"})
     } else {
-        console.error(err.stack)
+        console.error(err)
         res.status(500).json({success: false, reason: "Internal Server Error"})
     }
 })

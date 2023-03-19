@@ -127,7 +127,7 @@ export default {
     },
     media: {
         addMedia(id: number, owner: number, name: string, type: string, size: number, time: number, tags: string, callback?: ()=>any, onError?: (err: Error)=>any) {
-            fs.readdir('/media', (err, files) => {
+            fs.readdir('media', (err, files) => {
                 if (err) return onError?.(err);
                 if (files.length > 2000) return onError?.(new ApiError("Server has reached max capacity, please contact 1withspaghetti")); // DDOS attack prevention (max 16 GB)
                 db.get("SELECT COUNT(*) FROM media WHERE owner = ?;", owner, (err, row: any)=>{
