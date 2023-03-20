@@ -3,7 +3,6 @@ import validator from 'validator'
 
 import database, { Session } from "./database";
 import { Request, Response, NextFunction } from "express";
-import { ApiError } from "./api/api";
 
 var sessions: {[key: string]: Session} = {};
 

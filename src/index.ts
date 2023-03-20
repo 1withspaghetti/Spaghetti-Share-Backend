@@ -1,9 +1,10 @@
-import express, { Express } from 'express'
+import express, { Express, Request, Response } from 'express'
 import dotenv from 'dotenv'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 
 import api from './api/api'
+import path from 'path'
 
 dotenv.config();
 
@@ -23,6 +24,11 @@ app.use("/api/v1", api);
 
 // Uploaded files
 app.use('/media', express.static('media'));
+
+// Default to index for single page app
+app.use((req: Request, res: Response)=>{
+  res.sendFile(path.join(__dirname,'../public/index.html'))
+});
 
 const server = app.listen(port, ()=>{
   console.log(`
