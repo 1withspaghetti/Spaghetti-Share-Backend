@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 
 import api from './api/api'
 import path from 'path'
+import mediaServe from './media/mediaServe'
 
 dotenv.config();
 
@@ -23,7 +24,7 @@ app.use(cookieParser());
 app.use("/api/v1", api);
 
 // Uploaded files
-app.use('/media', express.static('media'));
+app.use('/media', mediaServe);
 
 // Default to index for single page app
 app.use((req: Request, res: Response)=>{
