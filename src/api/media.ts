@@ -165,4 +165,22 @@ router.post('/edit', sessionService.middleware,
     }, next);
 })
 
+router.post('/delete', sessionService.middleware,
+    body('id').exists().isHexadecimal(),
+(req: Request, res: Response, next: NextFunction)=>{
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) throw new ApiError("Invalid "+errors.array({onlyFirstError: true})[0].param);
+
+    database.media.getMediaWithOwner(mediaId.base64ToId(req.body.id), req.session.owner, (media)=>{
+        if (!media) throw new ApiError("Unknown file");
+        database.media.deleteMedia(media.id, ()=>{
+            const file = path.join('media', mediaId.idToBase64(media.id)+"."+media.type);
+            const fileThumbnail = path.join('media', mediaId.idToBase64(media.id)+"."+media.type+".jpg");
+            if (fs.existsSync(file)) fs.unlinkSync(file);
+            if (fs.existsSync(fileThumbnail)) fs.unlinkSync(fileThumbnail);
+            res.json({success: true});
+        }, next)
+    }, next)
+})
+
 export default router;

@@ -163,6 +163,13 @@ export default {
                 if (err) onError?.(err);
                 else callback?.();
             })
+        },
+
+        deleteMedia(id: number, callback?: ()=>any, onError?: (err: Error)=>any) {
+            db.run("DELETE FROM media WHERE id = ?;", [id], (err)=>{
+                if (err) onError?.(err);
+                else callback?.();
+            })
         }
     }
 }
