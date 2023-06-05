@@ -178,7 +178,7 @@ router.post('/delete', sessionService.middleware,
             const fileThumbnail = path.join('media', mediaId.idToBase64(media.id)+"."+media.type+".jpg");
             if (fs.existsSync(file)) fs.unlinkSync(file);
             if (fs.existsSync(fileThumbnail)) fs.unlinkSync(fileThumbnail);
-            res.json({success: true});
+            res.status(200).json({success: true});
         }, next)
     }, next)
 })

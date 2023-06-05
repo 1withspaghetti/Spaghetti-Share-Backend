@@ -9,6 +9,11 @@ import { ApiError } from './api';
 
 var router = Router();
 
+router.get("/self", sessionService.middleware, (req: Request, res: Response, next)=>{
+    database.accounts.getUser(req.session.owner, (user)=>{
+        res.status(200).json({user});
+    }, next)
+});
 
 router.post("/login", 
     body('username').exists().matches(/^(?=.{3,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/), 
