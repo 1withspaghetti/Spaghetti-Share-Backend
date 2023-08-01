@@ -18,13 +18,21 @@ router.get("*",
 
     if (req.query.width && req.query.height && errors.isEmpty() && FILE_TYPES[ext]?.startsWith("image") && ext != "gif") {
         if (!fs.existsSync(filePath)) return res.status(404);
-        const stream = fs.createReadStream(filePath);
-        let transform = sharp();
-        transform.resize(parseInt(req.query.width as string), parseInt(req.query.height as string), {fit:"inside"});
-        transform.toFormat("webp");
+        try {
+            const stream = fs.createReadStream(filePath);
+            let transform = sharp({ failOnError: false });
+            transform.resize(parseInt(req.query.width as string), parseInt(req.query.height as string), {fit:"inside"});
+            transform.toFormat("webp");
+            transform.on('error', console.error);
 
-        res.type(FILE_TYPES[path.extname(filePath).substring(1)]);
-        stream.pipe(transform).pipe(res);
+            res.type("webp");
+            stream.pipe(transform).pipe(res).on('error', console.error);
+        } catch (e) {
+            console.error(e);
+            res.sendFile(filePath, (err)=>{
+                res.status(404).end();
+            });
+        }
     } else {
         res.sendFile(filePath, (err)=>{
             res.status(404).end();
